@@ -240,6 +240,17 @@ public class ITutor extends javax.swing.JDialog {
         String nombre = nombreTutor.getText().trim();
         String carreraSeleccionada = (String) comboCarrera.getSelectedItem();
         String dias = txtdias.getText().trim();
+        // Validar que solo se ingresen días del 1 al 5
+        try {
+            int dia = Integer.parseInt(dias);
+            if (dia < 1 || dia > 5) {
+                JOptionPane.showMessageDialog(this, "Solo se permiten días del 1 al 5.", "Error en días", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "El campo 'días' solo debe contener números del 1 al 5.", "Error en días", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         if (nombre.isEmpty() || carreraSeleccionada == null || carreraSeleccionada.equals(" Selecciona carrera ") || dias.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor completa todos los campos antes de guardar.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
