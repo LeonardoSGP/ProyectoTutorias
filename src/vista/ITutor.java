@@ -18,7 +18,6 @@ public class ITutor extends javax.swing.JDialog {
     private int indiceSeleccionado = -1;
     private ITutorado itutorado;
     private IMenu menu;
-    // <<< NUEVO: Método para inyectar ITutorado
 
     public void setITutorado(ITutorado itutorado) {
         this.itutorado = itutorado;
@@ -60,7 +59,7 @@ public class ITutor extends javax.swing.JDialog {
         });
 
         comboCarrera.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{
-            " Selecciona carrera ", "Sistemas", "Electrónica", "Industrial", "Gestión Empresarial", "Civil", "Electrica", "Administracion", "Mecanica"
+            " Selecciona carrera ", "Sistemas", "Electrónica", "Industrial", "Gestión Empresarial", "Civil", "Electrica", "Administracion", "Mecanica", "Quimica"
         }));
 
     }
@@ -240,6 +239,23 @@ public class ITutor extends javax.swing.JDialog {
         String nombre = nombreTutor.getText().trim();
         String carreraSeleccionada = (String) comboCarrera.getSelectedItem();
         String dias = txtdias.getText().trim();
+
+        // Validación específica por campo
+        if (nombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Falta capturar el nombre del tutor.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (carreraSeleccionada == null || carreraSeleccionada.equals(" Selecciona carrera ")) {
+            JOptionPane.showMessageDialog(this, "Selecciona una carrera válida.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (dias.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Falta capturar los días disponibles.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         // Validar que solo se ingresen días del 1 al 5
         try {
             int dia = Integer.parseInt(dias);
@@ -252,13 +268,7 @@ public class ITutor extends javax.swing.JDialog {
             return;
         }
 
-        if (nombre.isEmpty() || carreraSeleccionada == null || carreraSeleccionada.equals(" Selecciona carrera ") || dias.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor completa todos los campos antes de guardar.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
         if (modoEditar) {
-            // Modificar tutor existente
             Tutor tutorModificar = tutores.get(indiceSeleccionado);
             tutorModificar.setNombre(nombre);
             tutorModificar.setCarrera(carreraSeleccionada);
@@ -274,7 +284,7 @@ public class ITutor extends javax.swing.JDialog {
             modoEditar = false;
             agregar.setText("Agregar registro");
             numTarS.setEnabled(true);
-            // >>> ACTUALIZA COMBO EN ITUTORADO
+
             if (itutorado != null) {
                 itutorado.actualizarTutores();
             }
@@ -284,7 +294,6 @@ public class ITutor extends javax.swing.JDialog {
             }
 
         } else {
-            // Validar tarjeta repetida solo si agregas
             for (Tutor t : cTutor.findTutorEntities()) {
                 if (t.getNumtar() == numTarjeta) {
                     JOptionPane.showMessageDialog(this, "El número de tarjeta ya existe. Ingresa uno diferente.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -301,7 +310,8 @@ public class ITutor extends javax.swing.JDialog {
             cTutor.create(tutor);
             JOptionPane.showMessageDialog(this, "Tutor guardado exitosamente.");
         }
-        // >>> ACTUALIZA COMBO EN ITUTORADO
+
+        // Actualiza combos
         if (itutorado != null) {
             itutorado.actualizarTutores();
         }
@@ -310,7 +320,7 @@ public class ITutor extends javax.swing.JDialog {
             menu.getVistaTutoria().actualizarTutoresYCitas();
         }
 
-        // Recargar tabla y limpiar campos
+        // Limpiar campos y recargar tabla
         tutores = cTutor.findTutorEntities();
         mt = new MTabla(tutores);
         tablaTutores.setModel(mt);
@@ -319,15 +329,6 @@ public class ITutor extends javax.swing.JDialog {
         nombreTutor.setText("");
         comboCarrera.setSelectedIndex(0);
         txtdias.setText("");
-        // <<< LLAMADA PARA ACTUALIZAR ITutorado
-        if (itutorado != null) {
-            itutorado.actualizarTutores();
-        }
-        if (menu != null) {
-            menu.getVistaCitaCoordinador().actualizarTutores();
-            menu.getVistaTutoria().actualizarTutoresYCitas();
-        }
-
 
     }//GEN-LAST:event_agregarActionPerformed
 

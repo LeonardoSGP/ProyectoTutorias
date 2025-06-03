@@ -1,4 +1,3 @@
-
 package modelo;
 
 import java.io.Serializable;
@@ -28,6 +27,8 @@ import javax.persistence.TemporalType;
     @NamedQuery(name = "Tutorado.findByNombre", query = "SELECT t FROM Tutorado t WHERE t.nombre = :nombre"),
     @NamedQuery(name = "Tutorado.findByGenero", query = "SELECT t FROM Tutorado t WHERE t.genero = :genero"),
     @NamedQuery(name = "Tutorado.findByFechanac", query = "SELECT t FROM Tutorado t WHERE t.fechanac = :fechanac")})
+    @NamedQuery(name = "Tutorado.findByCarrera", query = "SELECT t FROM Tutorado t WHERE t.carrera = :carrera")
+
 public class Tutorado implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -45,6 +46,8 @@ public class Tutorado implements Serializable {
     @Column(name = "fechanac")
     @Temporal(TemporalType.DATE)
     private Date fechanac;
+    @Column(name = "carrera")
+    private String carrera;
     @JoinColumn(name = "idtutor", referencedColumnName = "idpersona")
     @ManyToOne
     private Tutor idtutor;
@@ -98,6 +101,14 @@ public class Tutorado implements Serializable {
         this.fechanac = fechanac;
     }
 
+    public String getCarrera() {
+        return carrera;
+    }
+
+    public void setCarrera(String carrera) {
+        this.carrera = carrera;
+    }
+
     public Tutor getIdtutor() {
         return idtutor;
     }
@@ -138,5 +149,5 @@ public class Tutorado implements Serializable {
     public String toString() {
         return "modelo.Tutorado[ idtuto=" + idtuto + " ]";
     }
-    
+
 }

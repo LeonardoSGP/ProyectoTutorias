@@ -1,6 +1,8 @@
 package vista;
 
 import java.awt.BorderLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -39,6 +41,12 @@ public class IMenu extends javax.swing.JDialog {
                         tutoria.actualizarTutoresYCitas(); // Refresca tutores y citas
                     }
                 }
+            }
+        });
+            addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                System.exit(0); 
             }
         });
 

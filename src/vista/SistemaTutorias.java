@@ -1,9 +1,12 @@
 package vista;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import modelo.Tutor;
@@ -26,6 +29,13 @@ public class SistemaTutorias extends javax.swing.JDialog {
 
         // Estado inicial
         ajustarCampos();
+          // Si además quieres terminar toda la app al cerrar:
+    addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                System.exit(0); 
+            }
+        });
     }
 
     private void ajustarCampos() {

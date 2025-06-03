@@ -57,6 +57,10 @@ public class ITutorado extends javax.swing.JDialog {
         combogenero.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{
             "Selecciona Género", "M", "F"
         }));
+        comboCarrera.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{
+            "Selecciona Carrera", "Sistemas", "Electrónica", "Industrial", "Gestión Empresarial",
+            "Civil", "Electrica", "Administracion", "Mecanica", "Quimica"
+        }));
 
         adm = new AdmDatos();
         cTutor = new TutorJpaController(adm.getEmf());
@@ -111,8 +115,8 @@ public class ITutorado extends javax.swing.JDialog {
 
     public void cargarTablaEstudiantes() {
         listaTutorados = cTutorado.findTutoradoEntities();
-        String[] columnas = {"Número de Control", "Nombre", "Género", "Fecha de Nacimiento"};
-        Object[][] datos = new Object[listaTutorados.size()][4];
+        String[] columnas = {"Número de Control", "Nombre", "Género", "Fecha de Nacimiento", "Carrera"};
+        Object[][] datos = new Object[listaTutorados.size()][5];
 
         SimpleDateFormat formatoFecha = new SimpleDateFormat("dd/MM/yyyy");
 
@@ -122,6 +126,7 @@ public class ITutorado extends javax.swing.JDialog {
             datos[i][1] = t.getNombre();
             datos[i][2] = t.getGenero();
             datos[i][3] = (t.getFechanac() != null) ? formatoFecha.format(t.getFechanac()) : "";
+            datos[i][4] = t.getCarrera();
         }
 
         tablaestudiantes.setModel(new javax.swing.table.DefaultTableModel(datos, columnas) {
@@ -154,6 +159,7 @@ public class ITutorado extends javax.swing.JDialog {
             txtnombre.setText(tutoradoSeleccionado.getNombre());
             jDateChooser.setDate(tutoradoSeleccionado.getFechanac());
             combogenero.setSelectedItem(String.valueOf(tutoradoSeleccionado.getGenero()));
+            comboCarrera.setSelectedItem(tutoradoSeleccionado.getCarrera());
 
             txtnumcontrol.setEditable(false); // No se puede cambiar NC al editar
             btnregistrar.setText("Modificar");
@@ -192,17 +198,27 @@ public class ITutorado extends javax.swing.JDialog {
                 List<String> sinTutor = new ArrayList<>();
                 List<String> conTutor = new ArrayList<>();
 
-                // Llenar lista de estudiantes sin tutor
+                // Llenar lista de estudiantes sin tutor y que coincidan en carrera
                 for (Tutorado t : todosTutorados) {
-                    if (t.getIdtutor() == null) {
+                    tutorado_nom.put(t.getNombre(), t); // Siempre guardamos para buscar rápido
+
+                    if (t.getIdtutor() == null
+                            && t.getCarrera() != null
+                            && t.getCarrera().equalsIgnoreCase(tutorActual.getCarrera())) {
                         sinTutor.add(t.getNombre());
                     }
-                    tutorado_nom.put(t.getNombre(), t);
                 }
 
-                // Llenar lista de tutorados del tutor seleccionado
+                // Llenar lista de tutorados del tutor seleccionado y que coincidan en carrera
                 for (Tutorado t : tutoradosDelTutor) {
-                    conTutor.add(t.getNombre());
+                    if (t.getCarrera() != null && t.getCarrera().equalsIgnoreCase(tutorActual.getCarrera())) {
+                        conTutor.add(t.getNombre());
+                    }
+                }
+
+                if (sinTutor.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                            "No hay estudiantes disponibles en la carrera de este tutor.");
                 }
 
                 selectorListas1.setListas(sinTutor, conTutor);
@@ -219,6 +235,7 @@ public class ITutorado extends javax.swing.JDialog {
         txtnumcontrol.setEditable(true);
         jDateChooser.setDate(null);
         combogenero.setSelectedIndex(0);
+        comboCarrera.setSelectedIndex(0);
 
         tutoradoSeleccionado = null;
         enModoEdicion = false;
@@ -263,6 +280,8 @@ public class ITutorado extends javax.swing.JDialog {
         jScrollPane3 = new javax.swing.JScrollPane();
         tablaestudiantes = new javax.swing.JTable();
         btnregistrar = new javax.swing.JButton();
+        jLabel8 = new javax.swing.JLabel();
+        comboCarrera = new javax.swing.JComboBox<>();
 
         jButton3.setText("jButton3");
 
@@ -300,27 +319,25 @@ public class ITutorado extends javax.swing.JDialog {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(280, 280, 280)
+                        .addComponent(aceptar, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(27, 27, 27)
+                        .addComponent(jLabel1)
+                        .addGap(18, 18, 18)
+                        .addComponent(ltutores, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(31, 31, 31)
+                        .addComponent(btnAñadir)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(105, 105, 105)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel3)
                 .addGap(138, 138, 138))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(27, 27, 27)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(selectorListas1, javax.swing.GroupLayout.PREFERRED_SIZE, 635, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel1)
-                                .addGap(18, 18, 18)
-                                .addComponent(ltutores, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(31, 31, 31)
-                                .addComponent(btnAñadir))))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(280, 280, 280)
-                        .addComponent(aceptar, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(23, Short.MAX_VALUE))
+            .addComponent(selectorListas1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 685, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -334,11 +351,11 @@ public class ITutorado extends javax.swing.JDialog {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addComponent(selectorListas1, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(41, 41, 41)
+                .addComponent(selectorListas1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(45, 45, 45)
                 .addComponent(aceptar)
-                .addContainerGap(74, Short.MAX_VALUE))
+                .addContainerGap(91, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Asignar Tutor", jPanel1);
@@ -392,58 +409,73 @@ public class ITutorado extends javax.swing.JDialog {
             }
         });
 
+        jLabel8.setText("Carrera");
+
+        comboCarrera.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        comboCarrera.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                comboCarreraActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel5)
-                            .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel4)))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLabel7)))
-                .addGap(57, 57, 57)
+                .addGap(14, 14, 14)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel5)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel8)
+                    .addComponent(jLabel7))
+                .addGap(49, 49, 49)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(txtnumcontrol, javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(combogenero, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(txtnombre)
-                    .addComponent(jDateChooser, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jDateChooser, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+                    .addComponent(comboCarrera, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(33, 33, 33)
                 .addComponent(btnregistrar, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(205, 205, 205))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                .addGap(0, 34, Short.MAX_VALUE)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(25, 25, 25)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 627, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(24, 24, 24))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(36, 36, 36)
+                .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(txtnombre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel4))
                 .addGap(18, 18, 18)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtnumcontrol, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(11, 11, 11)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(combogenero, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel6))
-                .addGap(14, 14, 14)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jDateChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel7)
-                    .addComponent(btnregistrar))
                 .addGap(18, 18, 18)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel6)
+                    .addComponent(combogenero, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel7)
+                    .addComponent(jDateChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(12, 12, 12)
+                        .addComponent(btnregistrar))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(comboCarrera, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel8))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 23, Short.MAX_VALUE)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -478,7 +510,7 @@ public class ITutorado extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtnombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtnombreActionPerformed
-        // TODO add your handling code here:
+
     }//GEN-LAST:event_txtnombreActionPerformed
 
     private void btnAñadirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAñadirActionPerformed
@@ -573,10 +605,31 @@ public class ITutorado extends javax.swing.JDialog {
         String nc = txtnumcontrol.getText().trim();
         java.util.Date fecha = jDateChooser.getDate();
         String genero = (String) combogenero.getSelectedItem();
+        String carrera = (String) comboCarrera.getSelectedItem(); // <-- Nueva línea
 
-        // Validar campos vacíos
-        if (nombre.isEmpty() || nc.isEmpty() || fecha == null || genero == null || genero.equals("Selecciona Género")) {
-            JOptionPane.showMessageDialog(this, "Completa todos los campos antes de continuar.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
+        // Validaciones específicas
+        if (nc.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Falta capturar el número de control.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (nombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Falta capturar el nombre.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (genero == null || genero.equals("Selecciona Género")) {
+            JOptionPane.showMessageDialog(this, "Selecciona un género válido.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (carrera == null || carrera.equals("Selecciona Carrera")) {
+            JOptionPane.showMessageDialog(this, "Selecciona una carrera válida.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (fecha == null) {
+            JOptionPane.showMessageDialog(this, "Falta capturar la fecha de nacimiento.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -592,6 +645,8 @@ public class ITutorado extends javax.swing.JDialog {
             tutoradoSeleccionado.setNombre(nombre);
             tutoradoSeleccionado.setFechanac(fecha);
             tutoradoSeleccionado.setGenero(genero.charAt(0));
+            tutoradoSeleccionado.setNc(nc);
+            tutoradoSeleccionado.setCarrera(carrera);
 
             try {
                 cTutorado.edit(tutoradoSeleccionado);
@@ -616,6 +671,7 @@ public class ITutorado extends javax.swing.JDialog {
             nuevo.setNc(nc);
             nuevo.setFechanac(fecha);
             nuevo.setGenero(genero.charAt(0));
+            nuevo.setCarrera(carrera);
 
             try {
                 cTutorado.create(nuevo);
@@ -641,8 +697,12 @@ public class ITutorado extends javax.swing.JDialog {
     }//GEN-LAST:event_txtnombreKeyTyped
 
     private void ltutoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ltutoresActionPerformed
-        // TODO add your handling code here:
+
     }//GEN-LAST:event_ltutoresActionPerformed
+
+    private void comboCarreraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboCarreraActionPerformed
+
+    }//GEN-LAST:event_comboCarreraActionPerformed
 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
@@ -690,6 +750,7 @@ public class ITutorado extends javax.swing.JDialog {
     private javax.swing.JButton aceptar;
     private javax.swing.JButton btnAñadir;
     private javax.swing.JButton btnregistrar;
+    private javax.swing.JComboBox<String> comboCarrera;
     private javax.swing.JComboBox<String> combogenero;
     private javax.swing.JButton jButton3;
     private com.toedter.calendar.JDateChooser jDateChooser;
@@ -700,6 +761,7 @@ public class ITutorado extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
