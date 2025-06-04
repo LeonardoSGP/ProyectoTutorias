@@ -4,6 +4,8 @@ import control.AdmDatos;
 import control.TutorJpaController;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import modelo.MTabla;
 import modelo.Tutor;
 
@@ -36,10 +38,16 @@ public class ITutor extends javax.swing.JDialog {
                 dispose();
             }
         });
+
         cTutor = new TutorJpaController(admDatos.getEmf());
         tutores = cTutor.findTutorEntities();
         mt = new MTabla(tutores);
         tablaTutores.setModel(mt);
+
+        agregar.setEnabled(false);
+
+        configurarValidacionEnTiempoReal();
+
         tablaTutores.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int fila = tablaTutores.getSelectedRow();
@@ -54,14 +62,140 @@ public class ITutor extends javax.swing.JDialog {
                     agregar.setText("Modificar registro");
                     modoEditar = true;
                     indiceSeleccionado = fila;
+
+                    // Validar campos después de cargar datos
+                    validarYHabilitarBoton();
                 }
             }
         });
 
         comboCarrera.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{
-            " Selecciona carrera ", "Sistemas", "Electrónica", "Industrial", "Gestión Empresarial", "Civil", "Electrica", "Administracion", "Mecanica", "Quimica"
+            " Selecciona carrera ", "Sistemas", "Electrónica", "Industrial", "Gestión Empresarial",
+            "Civil", "Electrica", "Administracion", "Mecanica", "Quimica"
         }));
+    }
 
+    private void configurarValidacionEnTiempoReal() {
+        numTarS.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+
+            public void insertUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+        });
+
+        nombreTutor.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+
+            public void insertUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+        });
+
+        txtdias.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+
+            public void insertUpdate(DocumentEvent e) {
+                validarYHabilitarBoton();
+            }
+        });
+
+        comboCarrera.addActionListener(e -> validarYHabilitarBoton());
+    }
+
+    private boolean validarCampos() {
+        String numTarjetaTexto = numTarS.getText().trim();
+        if (numTarjetaTexto.length() != 8) {
+            return false;
+        }
+        try {
+            Integer.parseInt(numTarjetaTexto);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
+        if (nombreTutor.getText().trim().isEmpty()) {
+            return false;
+        }
+
+        String carreraSeleccionada = (String) comboCarrera.getSelectedItem();
+        if (carreraSeleccionada == null || carreraSeleccionada.equals(" Selecciona carrera ")) {
+            return false;
+        }
+
+        String dias = txtdias.getText().trim();
+        try {
+            int dia = Integer.parseInt(dias);
+            if (dia < 1 || dia > 5) {
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void validarYHabilitarBoton() {
+        agregar.setEnabled(validarCampos());
+    }
+
+    private void mostrarErroresDetallados() {
+        StringBuilder errores = new StringBuilder("Corrige los siguientes campos:\n");
+
+        // Validar número de tarjeta
+        String numTarjetaTexto = numTarS.getText().trim();
+        if (numTarjetaTexto.length() != 8) {
+            errores.append("- Número de tarjeta debe tener 8 dígitos\n");
+        } else {
+            try {
+                Integer.parseInt(numTarjetaTexto);
+            } catch (NumberFormatException e) {
+                errores.append("- Número de tarjeta debe ser numérico\n");
+            }
+        }
+
+        // Validar nombre
+        if (nombreTutor.getText().trim().isEmpty()) {
+            errores.append("- Nombre del tutor es obligatorio\n");
+        }
+
+        // Validar carrera
+        String carreraSeleccionada = (String) comboCarrera.getSelectedItem();
+        if (carreraSeleccionada == null || carreraSeleccionada.equals(" Selecciona carrera ")) {
+            errores.append("- Debes seleccionar una carrera\n");
+        }
+
+        // Validar días
+        String dias = txtdias.getText().trim();
+        try {
+            int dia = Integer.parseInt(dias);
+            if (dia < 1 || dia > 5) {
+                errores.append("- Días debe ser entre 1 y 5\n");
+            }
+        } catch (NumberFormatException e) {
+            errores.append("- Días debe ser un número válido (1-5)\n");
+        }
+
+        JOptionPane.showMessageDialog(this, errores.toString(), "Error en campos", JOptionPane.ERROR_MESSAGE);
     }
 
     @SuppressWarnings("unchecked")
@@ -203,8 +337,8 @@ public class ITutor extends javax.swing.JDialog {
                             .addComponent(jLabel5))
                         .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel4)
-                            .addComponent(comboCarrera, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(comboCarrera, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel4)))
                     .addComponent(jLabel1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 231, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -215,58 +349,16 @@ public class ITutor extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void agregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_agregarActionPerformed
+        if (!validarCampos()) {
+            mostrarErroresDetallados();
+            return;
+        }
+
         String numTarjetaTexto = numTarS.getText().trim();
-
-        if (numTarjetaTexto.length() != 8) {
-            JOptionPane.showMessageDialog(this, "El número de tarjeta debe tener exactamente 8 dígitos.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int numTarjeta = 0;
-        try {
-            for (char c : numTarjetaTexto.toCharArray()) {
-                if (!Character.isDigit(c)) {
-                    JOptionPane.showMessageDialog(this, "El número de tarjeta solo debe contener dígitos numéricos.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-            }
-            numTarjeta = Integer.parseInt(numTarjetaTexto);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Por favor ingrese un número de tarjeta válido", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
+        int numTarjeta = Integer.parseInt(numTarjetaTexto);
         String nombre = nombreTutor.getText().trim();
         String carreraSeleccionada = (String) comboCarrera.getSelectedItem();
         String dias = txtdias.getText().trim();
-
-        // Validación específica por campo
-        if (nombre.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Falta capturar el nombre del tutor.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (carreraSeleccionada == null || carreraSeleccionada.equals(" Selecciona carrera ")) {
-            JOptionPane.showMessageDialog(this, "Selecciona una carrera válida.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (dias.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Falta capturar los días disponibles.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Validar que solo se ingresen días del 1 al 5
-        try {
-            int dia = Integer.parseInt(dias);
-            if (dia < 1 || dia > 5) {
-                JOptionPane.showMessageDialog(this, "Solo se permiten días del 1 al 5.", "Error en días", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "El campo 'días' solo debe contener números del 1 al 5.", "Error en días", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
 
         if (modoEditar) {
             Tutor tutorModificar = tutores.get(indiceSeleccionado);
@@ -329,6 +421,9 @@ public class ITutor extends javax.swing.JDialog {
         nombreTutor.setText("");
         comboCarrera.setSelectedIndex(0);
         txtdias.setText("");
+
+        // Deshabilitar botón después de agregar
+        agregar.setEnabled(false);
 
     }//GEN-LAST:event_agregarActionPerformed
 

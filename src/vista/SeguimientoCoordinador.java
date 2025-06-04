@@ -22,15 +22,19 @@ public class SeguimientoCoordinador extends javax.swing.JDialog {
     public SeguimientoCoordinador(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
-        //rellenar();
     }
 
-    public SeguimientoCoordinador(java.awt.Frame parent, boolean modal, String nc) {
-        super(parent, modal);
-        this.nc = nc;
-        initComponents();
-        rellenar(); // Carga el seguimiento al abrir
-    }
+public SeguimientoCoordinador(java.awt.Frame parent, boolean modal, String nc) {
+    super(parent, modal);
+    this.nc = nc;
+    initComponents();
+
+    // Asigna el modelo con encabezados, aunque esté vacío
+    tablaTutorado.setModel(new MTablaTutorado(new ArrayList<>()));
+
+    // Luego carga los datos
+    rellenar();
+}
 
     private void rellenar() {
         EntityManager em = Persistence.createEntityManagerFactory("Tutoria3PU").createEntityManager();
@@ -108,7 +112,7 @@ public class SeguimientoCoordinador extends javax.swing.JDialog {
                 {null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Fecha", "Hora", "Asistencia", "Acciones"
             }
         ));
         jScrollPane1.setViewportView(tablaTutorado);

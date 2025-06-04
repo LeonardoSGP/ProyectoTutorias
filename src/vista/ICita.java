@@ -100,50 +100,55 @@ public class ICita extends javax.swing.JDialog {
         });
 
     }
+
     public ICita(java.awt.Dialog parent, boolean modal, Tutor tutor) {
-    super(parent, modal);
-    initComponents();
+        super(parent, modal);
+        initComponents();
 
-    this.tutorActual = tutor; // Guardar tutor logueado
+        this.tutorActual = tutor; // Guardar tutor logueado
 
-    // Inicializar componentes adicionales como en el constructor original
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory("Tutoria3PU");
-    cTutor = new TutorJpaController(emf);
-    cCita = new CitaJpaController(emf);
+        // Inicializar componentes adicionales como en el constructor original
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("Tutoria3PU");
+        cTutor = new TutorJpaController(emf);
+        cCita = new CitaJpaController(emf);
 
-    tutores = cTutor.findTutorEntities(); // Aquí inicializamos la lista
-    tutores.sort((t1, t2) -> t1.getIdpersona().compareTo(t2.getIdpersona()));
+        tutores = cTutor.findTutorEntities(); // Aquí inicializamos la lista
+        tutores.sort((t1, t2) -> t1.getIdpersona().compareTo(t2.getIdpersona()));
 
-    // Inicializa comboestado como en el original
-    comboestado.removeAllItems();
-    comboestado.addItem("Selecciona un estado");
-    comboestado.addItem("Pendiente");
-    comboestado.addItem("Confirmada");
-    comboestado.addItem("Cancelada");
-    comboestado.addItem("Finalizada");
+        // Inicializa comboestado como en el original
+        comboestado.removeAllItems();
+        comboestado.addItem("Selecciona un estado");
+        comboestado.addItem("Pendiente");
+        comboestado.addItem("Confirmada");
+        comboestado.addItem("Cancelada");
+        comboestado.addItem("Finalizada");
 
-    // Si no quieres que seleccione tutores (porque ya es el tutor logueado)
-    comboTutor.removeAllItems();
-    comboTutor.addItem(tutor.getNombre()); // Solo su propio nombre
+        // Si no quieres que seleccione tutores (porque ya es el tutor logueado)
+        comboTutor.removeAllItems();
+        comboTutor.addItem(tutor.getNombre()); // Solo su propio nombre
 
-    // Configurar el spinnerhora igual que el original
-    String[] hours = {
-        "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM",
-        "11:00 AM", "12:00 PM", "13:00 PM", "14:00 PM",
-        "15:00 PM", "16:00 PM", "17:00 PM", "18:00 PM", "19:00 PM"
-    };
-    SpinnerListModel hourModel = new SpinnerListModel(hours);
-    spinnerhora.setModel(hourModel);
+        // Configurar el spinnerhora igual que el original
+        String[] hours = {
+            "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM",
+            "11:00 AM", "12:00 PM", "13:00 PM", "14:00 PM",
+            "15:00 PM", "16:00 PM", "17:00 PM", "18:00 PM", "19:00 PM"
+        };
+        SpinnerListModel hourModel = new SpinnerListModel(hours);
+        spinnerhora.setModel(hourModel);
 
-    jdatefecha.setDateFormatString("dd/MM/yyyy");
-    Calendar hoy = Calendar.getInstance();
-    jdatefecha.setMinSelectableDate(hoy.getTime());
+        jdatefecha.setDateFormatString("dd/MM/yyyy");
+        Calendar hoy = Calendar.getInstance();
+        jdatefecha.setMinSelectableDate(hoy.getTime());
+        // Mostrar las citas de ese tutor directamente
+        tablaCitas.setModel(new javax.swing.table.DefaultTableModel(
+                new Object[][]{},
+                new String[]{"Fecha", "Hora", "Asunto", "Estado"}
+        ));
+        cargarCitasDelTutor(tutor);
 
-    // Mostrar las citas de ese tutor directamente
-    cargarCitasDelTutor(tutor);
-}
-
-
+        // Mostrar las citas de ese tutor directamente
+        cargarCitasDelTutor(tutor);
+    }
 
     public Tutor getTutorSeleccionado() {
         String nombre = (String) comboTutor.getSelectedItem();
@@ -220,7 +225,6 @@ public class ICita extends javax.swing.JDialog {
             }
         }
     }
-    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents

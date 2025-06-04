@@ -3,6 +3,7 @@ package vista;
 import control.AdmDatos;
 import control.TutorJpaController;
 import control.TutoradoJpaController;
+import java.awt.event.ItemEvent;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,12 +17,13 @@ import modelo.Tutor;
 import modelo.Tutorado;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 public class ITutorado extends javax.swing.JDialog {
 
     private boolean enModoEdicion = false;
     private Tutorado tutoradoSeleccionado = null;
-
     private Tutor tutor;
     private TutorJpaController cTutor;
     private List<Tutor> tutores;
@@ -41,6 +43,28 @@ public class ITutorado extends javax.swing.JDialog {
     public ITutorado(java.awt.Dialog parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        ltutores.setEnabled(false);
+        btntutor.setEnabled(false);
+        aceptar.setEnabled(false);
+        btncarrera.setEnabled(false);
+        btnregistrar.setEnabled(false);
+
+        configurarValidacionRegistro();
+
+        comboCarrera1.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                String seleccion = (String) comboCarrera1.getSelectedItem();
+                btncarrera.setEnabled(!seleccion.equals("Selecciona Carrera"));
+            }
+        });
+        ltutores.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+
+                btntutor.setEnabled(!ltutores.getSelectedItem().equals(SELECCIONA));
+
+                selectorListas1.setListas(new ArrayList<>(), new ArrayList<>());
+            }
+        });
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
@@ -51,11 +75,15 @@ public class ITutorado extends javax.swing.JDialog {
         mestudiantes = new DefaultListModel<>();
         mtutorados = new DefaultListModel<>();
 
-        // Inicialmente la lista derecha (tutorados) estará vacía
+        // Inicialmente ambas listas vacías
         selectorListas1.setListas(new ArrayList<>(), new ArrayList<>());
 
         combogenero.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{
             "Selecciona Género", "M", "F"
+        }));
+        comboCarrera1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{
+            "Selecciona Carrera", "Sistemas", "Electrónica", "Industrial", "Gestión Empresarial",
+            "Civil", "Electrica", "Administracion", "Mecanica", "Quimica"
         }));
         comboCarrera.setModel(new javax.swing.DefaultComboBoxModel<>(new String[]{
             "Selecciona Carrera", "Sistemas", "Electrónica", "Industrial", "Gestión Empresarial",
@@ -70,7 +98,7 @@ public class ITutorado extends javax.swing.JDialog {
         listaTutorados = cTutorado.findTutoradoEntities();
 
         cargarTutores();
-        cargarEstudiantes();
+
         cargarTablaEstudiantes();
 
         selectorListas1.setBotonDerechaHabilitado(false);
@@ -81,7 +109,6 @@ public class ITutorado extends javax.swing.JDialog {
             }
         });
 
-        // Impedir fechas futuras en el JDateChooser
         jDateChooser.setMaxSelectableDate(new java.util.Date());
     }
 
@@ -94,23 +121,22 @@ public class ITutorado extends javax.swing.JDialog {
     }
 
     public void cargarEstudiantes() {
-        // Obtener todos los tutorados de la base de datos
-        listaTutorados = cTutorado.findTutoradoEntities();
+        if (tutor != null) {
+            cargarEstudiantesFiltrados(tutor);
+        } else {
+            listaTutorados = cTutorado.findTutoradoEntities();
+            tutorado_nom.clear();
+            List<String> sinTutor = new ArrayList<>();
 
-        tutorado_nom.clear();
-        List<String> sinTutor = new ArrayList<>();
-
-        // Filtrar solo los que no tienen tutor asignado
-        for (Tutorado t : listaTutorados) {
-            if (t.getIdtutor() == null) {
-                sinTutor.add(t.getNombre());
+            for (Tutorado t : listaTutorados) {
+                if (t.getIdtutor() == null) {
+                    sinTutor.add(t.getNombre());
+                }
+                tutorado_nom.put(t.getNombre(), t);
             }
-            tutorado_nom.put(t.getNombre(), t);
-        }
 
-        // Mostrar solo estudiantes sin tutor (lista izquierda)
-        // y lista derecha vacía inicialmente
-        selectorListas1.setListas(sinTutor, new ArrayList<>());
+            selectorListas1.setListas(sinTutor, new ArrayList<>());
+        }
     }
 
     public void cargarTablaEstudiantes() {
@@ -161,7 +187,7 @@ public class ITutorado extends javax.swing.JDialog {
             combogenero.setSelectedItem(String.valueOf(tutoradoSeleccionado.getGenero()));
             comboCarrera.setSelectedItem(tutoradoSeleccionado.getCarrera());
 
-            txtnumcontrol.setEditable(false); // No se puede cambiar NC al editar
+            txtnumcontrol.setEditable(false);
             btnregistrar.setText("Modificar");
             enModoEdicion = true;
         }
@@ -244,13 +270,178 @@ public class ITutorado extends javax.swing.JDialog {
 
     public void actualizarTutores() {
         try {
-            // Recarga los tutores desde la base de datos
             cTutor = new TutorJpaController(adm.getEmf());
             tutores = cTutor.findTutorEntities();
             cargarTutores(); // Método que ya tienes para llenar el ComboBox
         } catch (Exception ex) {
             Logger.getLogger(ITutorado.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void cargarEstudiantesFiltrados(Tutor tutorSeleccionado) {
+        listaTutorados = cTutorado.findTutoradoEntities();
+        tutorado_nom.clear();
+        List<String> sinTutor = new ArrayList<>();
+        List<String> conEsteTutor = new ArrayList<>();
+
+        for (Tutorado t : listaTutorados) {
+            if (t.getCarrera() != null && t.getCarrera().equalsIgnoreCase(tutorSeleccionado.getCarrera())) {
+                tutorado_nom.put(t.getNombre(), t);
+
+                if (t.getIdtutor() == null) {
+                    sinTutor.add(t.getNombre());
+                } else if (t.getIdtutor().equals(tutorSeleccionado)) {
+                    conEsteTutor.add(t.getNombre());
+                }
+            }
+        }
+
+        selectorListas1.setListas(sinTutor, conEsteTutor);
+
+        selectorListas1.setBotonDerechaHabilitado(!sinTutor.isEmpty());
+
+        if (sinTutor.isEmpty() && conEsteTutor.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "No hay estudiantes registrados en la carrera " + tutorSeleccionado.getCarrera(),
+                    "Información",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void cargarEstudiantesPorCarreraYTutor(Tutor tutorSeleccionado) {
+        List<Tutorado> todosTutorados = cTutorado.findTutoradoEntities();
+
+        List<String> estudiantesSinTutor = new ArrayList<>();
+        List<String> estudiantesConEsteTutor = new ArrayList<>();
+
+        for (Tutorado t : todosTutorados) {
+            // Verificar que el estudiante es de la misma carrera que el tutor
+            if (t.getCarrera() != null && t.getCarrera().equalsIgnoreCase(tutorSeleccionado.getCarrera())) {
+                if (t.getIdtutor() == null) {
+                    estudiantesSinTutor.add(t.getNombre());
+                } else if (t.getIdtutor().equals(tutorSeleccionado)) {
+                    estudiantesConEsteTutor.add(t.getNombre());
+                }
+                tutorado_nom.put(t.getNombre(), t);
+            }
+        }
+
+        selectorListas1.setListas(estudiantesSinTutor, estudiantesConEsteTutor);
+        selectorListas1.setBotonDerechaHabilitado(!estudiantesSinTutor.isEmpty());
+
+        if (estudiantesSinTutor.isEmpty() && estudiantesConEsteTutor.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "No hay estudiantes registrados en la carrera " + tutorSeleccionado.getCarrera(),
+                    "Información",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private boolean validarCamposRegistro() {
+        if (txtnumcontrol.getText().trim().isEmpty()) {
+            return false;
+        }
+
+        if (txtnombre.getText().trim().isEmpty()) {
+            return false;
+        }
+
+        String genero = (String) combogenero.getSelectedItem();
+        if (genero == null || genero.equals("Selecciona Género")) {
+            return false;
+        }
+
+        String carrera = (String) comboCarrera.getSelectedItem();
+        if (carrera == null || carrera.equals("Selecciona Carrera")) {
+            return false;
+        }
+
+        if (jDateChooser.getDate() == null) {
+            return false;
+        }
+
+        java.util.Date hoy = new java.util.Date();
+        if (jDateChooser.getDate().after(hoy)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void configurarValidacionRegistro() {
+
+        txtnumcontrol.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) {
+                validarYHabilitarRegistro();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarYHabilitarRegistro();
+            }
+
+            public void insertUpdate(DocumentEvent e) {
+                validarYHabilitarRegistro();
+            }
+        });
+
+        txtnombre.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) {
+                validarYHabilitarRegistro();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                validarYHabilitarRegistro();
+            }
+
+            public void insertUpdate(DocumentEvent e) {
+                validarYHabilitarRegistro();
+            }
+        });
+
+        combogenero.addActionListener(e -> validarYHabilitarRegistro());
+
+        comboCarrera.addActionListener(e -> validarYHabilitarRegistro());
+
+        jDateChooser.addPropertyChangeListener("date", evt -> validarYHabilitarRegistro());
+    }
+
+    private void validarYHabilitarRegistro() {
+        btnregistrar.setEnabled(validarCamposRegistro());
+    }
+
+    private void mostrarErroresRegistro() {
+        StringBuilder errores = new StringBuilder("Corrige los siguientes campos:\n");
+
+        // Validar número de control
+        if (txtnumcontrol.getText().trim().isEmpty()) {
+            errores.append("- Número de control es obligatorio\n");
+        }
+
+        // Validar nombre
+        if (txtnombre.getText().trim().isEmpty()) {
+            errores.append("- Nombre es obligatorio\n");
+        }
+
+        // Validar género
+        String genero = (String) combogenero.getSelectedItem();
+        if (genero == null || genero.equals("Selecciona Género")) {
+            errores.append("- Selecciona un género válido\n");
+        }
+
+        // Validar carrera
+        String carrera = (String) comboCarrera.getSelectedItem();
+        if (carrera == null || carrera.equals("Selecciona Carrera")) {
+            errores.append("- Selecciona una carrera válida\n");
+        }
+
+        // Validar fecha
+        if (jDateChooser.getDate() == null) {
+            errores.append("- Fecha de nacimiento es obligatoria\n");
+        } else if (jDateChooser.getDate().after(new java.util.Date())) {
+            errores.append("- La fecha no puede ser futura\n");
+        }
+
+        JOptionPane.showMessageDialog(this, errores.toString(), "Error en campos", JOptionPane.ERROR_MESSAGE);
     }
 
     @SuppressWarnings("unchecked")
@@ -263,10 +454,13 @@ public class ITutorado extends javax.swing.JDialog {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         aceptar = new javax.swing.JButton();
-        ltutores = new javax.swing.JComboBox<>();
-        btnAñadir = new javax.swing.JButton();
+        btntutor = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
         selectorListas1 = new componentevisual.SelectorListas();
+        jLabel9 = new javax.swing.JLabel();
+        btncarrera = new javax.swing.JButton();
+        ltutores = new javax.swing.JComboBox<>();
+        comboCarrera1 = new javax.swing.JComboBox<>();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jLabel4 = new javax.swing.JLabel();
@@ -287,7 +481,7 @@ public class ITutorado extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        jLabel1.setText("Seleccionar Tutor");
+        jLabel1.setText("Seleccionar Carrera");
 
         jLabel2.setText("Estudiantes");
 
@@ -298,64 +492,83 @@ public class ITutorado extends javax.swing.JDialog {
             }
         });
 
-        ltutores.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        ltutores.addActionListener(new java.awt.event.ActionListener() {
+        btntutor.setText("Aceptar Tutor");
+        btntutor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ltutoresActionPerformed(evt);
-            }
-        });
-
-        btnAñadir.setText("Aceptar Tutor");
-        btnAñadir.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnAñadirActionPerformed(evt);
+                btntutorActionPerformed(evt);
             }
         });
 
         jLabel3.setText("Tutorados");
 
+        jLabel9.setText("Seleccionar Tutor");
+
+        btncarrera.setText("Aceptar Carrera");
+        btncarrera.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btncarreraActionPerformed(evt);
+            }
+        });
+
+        ltutores.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        comboCarrera1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(280, 280, 280)
-                        .addComponent(aceptar, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel1)
+                            .addComponent(jLabel9))
+                        .addGap(54, 54, 54)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(ltutores, 0, 224, Short.MAX_VALUE)
+                            .addComponent(comboCarrera1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(43, 43, 43))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(27, 27, 27)
-                        .addComponent(jLabel1)
-                        .addGap(18, 18, 18)
-                        .addComponent(ltutores, javax.swing.GroupLayout.PREFERRED_SIZE, 191, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(31, 31, 31)
-                        .addComponent(btnAñadir)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(123, 123, 123)
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(btntutor, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btncarrera, javax.swing.GroupLayout.DEFAULT_SIZE, 108, Short.MAX_VALUE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(15, 15, 15)
+                        .addComponent(jLabel3)))
+                .addGap(83, 83, 83))
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(105, 105, 105)
-                .addComponent(jLabel2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel3)
-                .addGap(138, 138, 138))
-            .addComponent(selectorListas1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 685, Short.MAX_VALUE)
+                .addGap(289, 289, 289)
+                .addComponent(aceptar, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addComponent(selectorListas1, javax.swing.GroupLayout.DEFAULT_SIZE, 685, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(35, 35, 35)
+                .addGap(31, 31, 31)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
-                    .addComponent(ltutores, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnAñadir))
-                .addGap(27, 27, 27)
+                    .addComponent(comboCarrera1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btncarrera))
+                .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(41, 41, 41)
+                    .addComponent(jLabel9)
+                    .addComponent(ltutores, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btntutor))
+                .addGap(29, 29, 29)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(selectorListas1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(45, 45, 45)
+                .addGap(36, 36, 36)
                 .addComponent(aceptar)
-                .addContainerGap(91, Short.MAX_VALUE))
+                .addContainerGap(90, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Asignar Tutor", jPanel1);
@@ -464,15 +677,11 @@ public class ITutorado extends javax.swing.JDialog {
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel7)
                     .addComponent(jDateChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(12, 12, 12)
-                        .addComponent(btnregistrar))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(comboCarrera, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel8))))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(comboCarrera, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel8)
+                    .addComponent(btnregistrar))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 23, Short.MAX_VALUE)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -513,19 +722,42 @@ public class ITutorado extends javax.swing.JDialog {
 
     }//GEN-LAST:event_txtnombreActionPerformed
 
-    private void btnAñadirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAñadirActionPerformed
-        if (ltutores.getSelectedItem().equals(SELECCIONA))
-            JOptionPane.showMessageDialog(this, "Selecciona un tutor");
-        else if (JOptionPane.showConfirmDialog(this, "Seleccionaste al tutor " + ltutores.getSelectedItem() + "?") == 0) {
-            tutor = tutores.get(ltutores.getSelectedIndex() - 1);
-            ltutores.setEnabled(false);
-            btnAñadir.setText(SELECCIONADO);
-            btnAñadir.setEnabled(false);
-            selectorListas1.setBotonDerechaHabilitado(true);
-            if (!mestudiantes.isEmpty()) {
-            }
+    private void btntutorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btntutorActionPerformed
+        if (ltutores.getSelectedItem().equals(SELECCIONA)) {
+            JOptionPane.showMessageDialog(this, "Selecciona un tutor válido.");
+            return;
         }
-    }//GEN-LAST:event_btnAñadirActionPerformed
+
+        int confirmacion = JOptionPane.showConfirmDialog(
+                this,
+                "¿Confirmas la selección del tutor " + ltutores.getSelectedItem() + "?",
+                "Confirmar tutor",
+                JOptionPane.YES_NO_OPTION);
+
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            // Obtener el tutor seleccionado
+            String nombreTutor = (String) ltutores.getSelectedItem();
+            tutor = tutores.stream()
+                    .filter(t -> t.getNombre().equals(nombreTutor))
+                    .findFirst().orElse(null);
+
+            if (tutor == null) {
+                JOptionPane.showMessageDialog(this, "Tutor no válido.");
+                return;
+            }
+
+            // Actualizar interfaz
+            btntutor.setText(SELECCIONADO);
+            btntutor.setEnabled(false);
+            ltutores.setEnabled(false);
+
+            // Cargar estudiantes SOLO AHORA, después de aceptar tutor
+            cargarEstudiantesPorCarreraYTutor(tutor);
+
+            // Habilitar el botón final de aceptar
+            aceptar.setEnabled(true);
+        }
+    }//GEN-LAST:event_btntutorActionPerformed
 
     private void aceptarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aceptarActionPerformed
         if (!isTutorSeleccionado()) {
@@ -548,6 +780,11 @@ public class ITutorado extends javax.swing.JDialog {
         List<String> estudiantesActuales = selectorListas1.obtenerLista1(); // Sin tutor
         List<String> tutoradosActuales = selectorListas1.obtenerLista2();   // Con tutor
 
+        // Variables para rastrear cambios
+        boolean cambiosRealizados = false;
+        int asignaciones = 0;
+        int desasignaciones = 0;
+
         // Procesar estudiantes que fueron movidos a tutorados (asignar tutor)
         for (String nombreTutorado : tutoradosActuales) {
             Tutorado t = tutorado_nom.get(nombreTutorado);
@@ -556,6 +793,8 @@ public class ITutorado extends javax.swing.JDialog {
                 try {
                     cTutorado.edit(t);
                     System.out.println("Asignado: " + t.getNombre() + " → " + tutor.getNombre());
+                    cambiosRealizados = true;
+                    asignaciones++;
                 } catch (Exception ex) {
                     Logger.getLogger(ITutorado.class.getName()).log(Level.SEVERE, null, ex);
                     JOptionPane.showMessageDialog(this,
@@ -573,6 +812,8 @@ public class ITutorado extends javax.swing.JDialog {
                 try {
                     cTutorado.edit(t);
                     System.out.println("Removido: " + t.getNombre() + " ← " + tutor.getNombre());
+                    cambiosRealizados = true;
+                    desasignaciones++;
                 } catch (Exception ex) {
                     Logger.getLogger(ITutorado.class.getName()).log(Level.SEVERE, null, ex);
                     JOptionPane.showMessageDialog(this,
@@ -582,63 +823,60 @@ public class ITutorado extends javax.swing.JDialog {
             }
         }
 
+        // Mostrar mensaje apropiado según si hubo cambios o no
+        if (cambiosRealizados) {
+            String mensaje = "Cambios guardados correctamente.\n";
+            if (asignaciones > 0) {
+                mensaje += "Estudiantes asignados: " + asignaciones + "\n";
+            }
+            if (desasignaciones > 0) {
+                mensaje += "Estudiantes desasignados: " + desasignaciones;
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    mensaje,
+                    "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "No se realizaron cambios. No hay estudiantes para asignar/remover.",
+                    "Información", JOptionPane.INFORMATION_MESSAGE);
+        }
+
         // Actualizar la vista
         cargarEstudiantes();
         cargarTablaEstudiantes();
-        JOptionPane.showMessageDialog(this,
-                "Cambios guardados correctamente.",
-                "Éxito", JOptionPane.INFORMATION_MESSAGE);
-// Restaurar para poder elegir otro tutor
+
+        // Restaurar para poder elegir otro tutor
         ltutores.setEnabled(true);
-        btnAñadir.setText("Añadir Tutor");
-        btnAñadir.setEnabled(true);
-        ltutores.setSelectedItem(SELECCIONA); // vuelve a mostrar la opción por defecto
+        btntutor.setText("Añadir Tutor");
+        btntutor.setEnabled(true);
+        ltutores.setSelectedItem(SELECCIONA);
 
         cargarEstudiantes();
         selectorListas1.setBotonDerechaHabilitado(false);
 
-
+        // Restaurar selección de carrera y tutor
+        comboCarrera1.setEnabled(true);
+        btncarrera.setEnabled(true);
+        comboCarrera1.setSelectedIndex(0);
+        ltutores.setEnabled(false);
+        ltutores.removeAllItems();
+        ltutores.addItem(SELECCIONA);
+        btntutor.setEnabled(false);
+        btntutor.setText("Añadir Tutor");
     }//GEN-LAST:event_aceptarActionPerformed
 
     private void btnregistrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnregistrarActionPerformed
+        if (!validarCamposRegistro()) {
+            mostrarErroresRegistro();
+            return;
+        }
+
         String nombre = txtnombre.getText().trim();
         String nc = txtnumcontrol.getText().trim();
         java.util.Date fecha = jDateChooser.getDate();
         String genero = (String) combogenero.getSelectedItem();
-        String carrera = (String) comboCarrera.getSelectedItem(); // <-- Nueva línea
-
-        // Validaciones específicas
-        if (nc.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Falta capturar el número de control.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (nombre.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Falta capturar el nombre.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (genero == null || genero.equals("Selecciona Género")) {
-            JOptionPane.showMessageDialog(this, "Selecciona un género válido.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (carrera == null || carrera.equals("Selecciona Carrera")) {
-            JOptionPane.showMessageDialog(this, "Selecciona una carrera válida.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (fecha == null) {
-            JOptionPane.showMessageDialog(this, "Falta capturar la fecha de nacimiento.", "Campo obligatorio", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Validar fecha futura
-        java.util.Date hoy = new java.util.Date();
-        if (fecha.after(hoy)) {
-            JOptionPane.showMessageDialog(this, "La fecha de nacimiento no puede ser futura.", "Fecha inválida", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        String carrera = (String) comboCarrera.getSelectedItem();
 
         if (enModoEdicion && tutoradoSeleccionado != null) {
             // MODIFICACIÓN
@@ -682,11 +920,20 @@ public class ITutorado extends javax.swing.JDialog {
             }
         }
 
-        // En ambos casos, actualiza la tabla y limpia el formulario
+        // Actualización controlada
         listaTutorados = cTutorado.findTutoradoEntities();
-        cargarEstudiantes();
-        cargarTablaEstudiantes();
+        cargarTablaEstudiantes(); // Solo actualiza la tabla
+
+        // Si hay un tutor seleccionado, recarga las listas FILTRADAS
+        if (tutor != null) {
+            cargarEstudiantesPorCarreraYTutor(tutor);
+        } else {
+            // Si no hay tutor seleccionado, deja las listas vacías
+            selectorListas1.setListas(new ArrayList<>(), new ArrayList<>());
+        }
+
         limpiarFormulario();
+        btnregistrar.setEnabled(false);
     }//GEN-LAST:event_btnregistrarActionPerformed
 
     private void txtnombreKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtnombreKeyTyped
@@ -696,13 +943,70 @@ public class ITutorado extends javax.swing.JDialog {
         }
     }//GEN-LAST:event_txtnombreKeyTyped
 
-    private void ltutoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ltutoresActionPerformed
-
-    }//GEN-LAST:event_ltutoresActionPerformed
-
     private void comboCarreraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboCarreraActionPerformed
 
     }//GEN-LAST:event_comboCarreraActionPerformed
+
+    private void btncarreraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncarreraActionPerformed
+        String carreraSeleccionada = (String) comboCarrera1.getSelectedItem();
+
+        if (carreraSeleccionada.equals("Selecciona Carrera")) {
+            JOptionPane.showMessageDialog(this, "Selecciona una carrera válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Agregar confirmación de carrera
+        int confirmacion = JOptionPane.showConfirmDialog(
+                this,
+                "¿Confirmas la selección de la carrera " + carreraSeleccionada + "?",
+                "Confirmar carrera",
+                JOptionPane.YES_NO_OPTION);
+
+        if (confirmacion != JOptionPane.YES_OPTION) {
+            return; // El usuario canceló la selección
+        }
+
+        // Limpiar combo de tutores
+        ltutores.removeAllItems();
+        ltutores.addItem(SELECCIONA);
+
+        // Cargar solo nombres de tutores de esa carrera (sin cargar estudiantes aún)
+        int tutoresEncontrados = 0;
+        for (Tutor t : tutores) {
+            if (t.getCarrera() != null && t.getCarrera().equals(carreraSeleccionada)) {
+                ltutores.addItem(t.getNombre());
+                tutoresEncontrados++;
+            }
+        }
+
+        if (tutoresEncontrados > 0) {
+            // Caso con tutores disponibles
+            ltutores.setEnabled(true); // Habilitar combo de tutores
+            comboCarrera1.setEnabled(false); // Bloquear combo de carrera
+            btncarrera.setText("Carrera Seleccionada");
+            btncarrera.setEnabled(false);
+
+            // Asegurar que las listas de estudiantes estén vacías
+            selectorListas1.setListas(new ArrayList<>(), new ArrayList<>());
+        } else {
+            // Caso sin tutores disponibles
+            JOptionPane.showMessageDialog(this,
+                    "No hay tutores disponibles para esta carrera. Por favor seleccione otra.",
+                    "Sin tutores",
+                    JOptionPane.WARNING_MESSAGE);
+
+            // Resetear selección
+            comboCarrera1.setSelectedIndex(0);
+            ltutores.setEnabled(false);
+            btntutor.setEnabled(false);
+            comboCarrera1.setEnabled(true); // Permitir nueva selección
+            btncarrera.setEnabled(false);
+            btncarrera.setText("Aceptar Carrera");
+
+            // Mantener listas vacías
+            selectorListas1.setListas(new ArrayList<>(), new ArrayList<>());
+        }
+    }//GEN-LAST:event_btncarreraActionPerformed
 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
@@ -748,9 +1052,11 @@ public class ITutorado extends javax.swing.JDialog {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton aceptar;
-    private javax.swing.JButton btnAñadir;
+    private javax.swing.JButton btncarrera;
     private javax.swing.JButton btnregistrar;
+    private javax.swing.JButton btntutor;
     private javax.swing.JComboBox<String> comboCarrera;
+    private javax.swing.JComboBox<String> comboCarrera1;
     private javax.swing.JComboBox<String> combogenero;
     private javax.swing.JButton jButton3;
     private com.toedter.calendar.JDateChooser jDateChooser;
@@ -762,6 +1068,7 @@ public class ITutorado extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
